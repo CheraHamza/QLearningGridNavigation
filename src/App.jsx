@@ -47,6 +47,7 @@ export default function App() {
 
 	const stepRef = useRef(step);
 	const resetRef = useRef(reset);
+	const skipResetOnObstacleChangeRef = useRef(false);
 	stepRef.current = step;
 	resetRef.current = reset;
 
@@ -179,6 +180,7 @@ export default function App() {
 	function handleModelLoaded(newEpsilon, envConfig) {
 		setCurrentEpsilon(newEpsilon);
 		setTrainResult(null);
+		skipResetOnObstacleChangeRef.current = true;
 		if (envConfig?.obstacles) {
 			setObstaclesDirectly(envConfig.obstacles);
 		} else {
@@ -225,6 +227,12 @@ export default function App() {
 
 		// Skip on initial render
 		if (prev === obstacles) return;
+
+		// Skip reset if the obstacle change came from loading a model
+		if (skipResetOnObstacleChangeRef.current) {
+			skipResetOnObstacleChangeRef.current = false;
+			return;
+		}
 
 		// Environment changed — reset the backend agent & training results
 		setTrainResult(null);
