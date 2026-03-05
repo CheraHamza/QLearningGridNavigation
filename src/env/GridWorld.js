@@ -25,6 +25,10 @@ export class GridWorld {
 		this.obstacles = new Set(obstacles.map(([x, y]) => `${x}-${y}`));
 	}
 
+	setTarget(x, y) {
+		this.targetPosition = [x, y];
+	}
+
 	reset() {
 		this.currentPosition = [...this.startingPosition];
 		this.steps = 0;

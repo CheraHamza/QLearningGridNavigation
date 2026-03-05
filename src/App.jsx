@@ -14,6 +14,7 @@ import {
 	Zap,
 	PenTool,
 	Trash2,
+	Crosshair,
 } from "lucide-react";
 
 export default function App() {
@@ -34,6 +35,7 @@ export default function App() {
 		toggleObstacle,
 		clearObstacles,
 		setObstaclesDirectly,
+		setTarget,
 	} = useGridWorld();
 
 	const [isAutoRunning, setIsAutoRunning] = useState(false);
@@ -41,6 +43,7 @@ export default function App() {
 	const [isTraining, setIsTraining] = useState(false);
 	const [trainResult, setTrainResult] = useState(null);
 	const [editMode, setEditMode] = useState(false);
+	const [targetEditMode, setTargetEditMode] = useState(false);
 
 	// Backend connection status: "connected" | "connecting" | "disconnected"
 	const [backendStatus, setBackendStatus] = useState("connecting");
@@ -48,6 +51,7 @@ export default function App() {
 	const stepRef = useRef(step);
 	const resetRef = useRef(reset);
 	const skipResetOnObstacleChangeRef = useRef(false);
+	const skipResetOnTargetChangeRef = useRef(false);
 	stepRef.current = step;
 	resetRef.current = reset;
 
@@ -181,10 +185,14 @@ export default function App() {
 		setCurrentEpsilon(newEpsilon);
 		setTrainResult(null);
 		skipResetOnObstacleChangeRef.current = true;
+		skipResetOnTargetChangeRef.current = true;
 		if (envConfig?.obstacles) {
 			setObstaclesDirectly(envConfig.obstacles);
 		} else {
 			setObstaclesDirectly([]);
+		}
+		if (envConfig?.target_position) {
+			setTarget(envConfig.target_position[0], envConfig.target_position[1]);
 		}
 		reset();
 	}
@@ -193,7 +201,7 @@ export default function App() {
 		setIsTraining(true);
 		setIsAutoRunning(false);
 		try {
-			const data = await trainBatch(episodes, obstacles);
+			const data = await trainBatch(episodes, obstacles, state.target);
 			setCurrentEpsilon(data.epsilon);
 
 			// Compute summary stats
@@ -241,6 +249,31 @@ export default function App() {
 			.catch(() => {});
 	}, [obstacles]);
 
+	// Reset agent when target changes (environment changed = old Q-table invalid)
+	const prevTargetRef = useRef(state?.target);
+	useEffect(() => {
+		if (!state) return;
+		const prev = prevTargetRef.current;
+		prevTargetRef.current = state.target;
+
+		// Skip on initial render
+		if (!prev || (prev[0] === state.target[0] && prev[1] === state.target[1]))
+			return;
+
+		// Skip reset if the target change came from loading a model
+		if (skipResetOnTargetChangeRef.current) {
+			skipResetOnTargetChangeRef.current = false;
+			return;
+		}
+
+		// Environment changed — reset the backend agent & training results
+		setTrainResult(null);
+		resetAgent()
+			.then((data) => setCurrentEpsilon(data.epsilon))
+			.catch(() => {});
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [state?.target]);
+
 	if (!state) return null;
 
 	return (
@@ -264,7 +297,12 @@ export default function App() {
 						history={history}
 						obstacles={obstacles}
 						editMode={editMode}
+						targetEditMode={targetEditMode}
 						onToggleObstacle={toggleObstacle}
+						onSetTarget={(x, y) => {
+							setTarget(x, y);
+							setTargetEditMode(false);
+						}}
 					/>
 					<Controls onStep={step} done={done} />
 				</div>
@@ -316,14 +354,27 @@ export default function App() {
 					</div>
 
 					<div className="card">
-						<h3 className="card-title">Obstacles</h3>
+						<h3 className="card-title">Obstacles & Target</h3>
 						<div className="agent-controls">
 							<button
 								className={`btn ${editMode ? "btn-danger" : "btn-secondary"}`}
-								onClick={() => setEditMode(!editMode)}
+								onClick={() => {
+									setEditMode(!editMode);
+									setTargetEditMode(false);
+								}}
 							>
 								<PenTool size={16} />
 								{editMode ? "Done Editing" : "Edit Obstacles"}
+							</button>
+							<button
+								className={`btn ${targetEditMode ? "btn-danger" : "btn-secondary"}`}
+								onClick={() => {
+									setTargetEditMode(!targetEditMode);
+									setEditMode(false);
+								}}
+							>
+								<Crosshair size={16} />
+								{targetEditMode ? "Cancel" : "Move Target"}
 							</button>
 							{obstacles.length > 0 && (
 								<button className="btn btn-secondary" onClick={clearObstacles}>
@@ -332,6 +383,11 @@ export default function App() {
 								</button>
 							)}
 						</div>
+						{state.target && (
+							<p className="turbo-hint">
+								Target: ({state.target[0]}, {state.target[1]})
+							</p>
+						)}
 					</div>
 
 					<div className="card">
@@ -388,7 +444,11 @@ export default function App() {
 						)}
 					</div>
 
-					<ModelManager onLoadModel={handleModelLoaded} obstacles={obstacles} />
+					<ModelManager
+						onLoadModel={handleModelLoaded}
+						obstacles={obstacles}
+						target={state.target}
+					/>
 					<HistoryPanel history={history} />
 				</aside>
 			</main>

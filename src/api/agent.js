@@ -71,14 +71,22 @@ export async function resetAgent() {
 	return response.json();
 }
 
-export async function trainBatch(episodes = 500, obstacles = []) {
+export async function trainBatch(
+	episodes = 500,
+	obstacles = [],
+	targetPosition = [8, 8],
+) {
 	// Training can be slow for many episodes — use a generous timeout (5 min)
 	const response = await fetchWithTimeout(
 		`${API_URL}/train`,
 		{
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ episodes, obstacles }),
+			body: JSON.stringify({
+				episodes,
+				obstacles,
+				target_position: targetPosition,
+			}),
 		},
 		300000,
 	);

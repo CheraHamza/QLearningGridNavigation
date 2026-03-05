@@ -2,7 +2,11 @@ import { useState, useEffect } from "react";
 import { fetchModels, saveModel, loadModel, deleteModel } from "../api/agent";
 import { Save, Upload, Trash2 } from "lucide-react";
 
-export default function ModelManager({ onLoadModel, obstacles = [] }) {
+export default function ModelManager({
+	onLoadModel,
+	obstacles = [],
+	target = [8, 8],
+}) {
 	const [models, setModels] = useState([]);
 	const [newModelName, setNewModelName] = useState("");
 	const [loading, setLoading] = useState(false);
@@ -24,7 +28,7 @@ export default function ModelManager({ onLoadModel, obstacles = [] }) {
 		if (!newModelName.trim()) return;
 		setLoading(true);
 		try {
-			const environment = { obstacles };
+			const environment = { obstacles, target_position: target };
 			await saveModel(newModelName.trim(), environment);
 			setNewModelName("");
 			await loadModels();
@@ -84,7 +88,10 @@ export default function ModelManager({ onLoadModel, obstacles = [] }) {
 								<span className="model-meta">
 									ε {m.epsilon.toFixed(3)} ·{" "}
 									{m.environment?.obstacles?.length || 0} walls ·{" "}
-									{new Date(m.created_at).toLocaleDateString()}
+									{m.environment?.target_position
+										? `target (${m.environment.target_position[0]}, ${m.environment.target_position[1]})`
+										: "default target"}{" "}
+									· {new Date(m.created_at).toLocaleDateString()}
 								</span>
 							</div>
 							<div className="model-actions">

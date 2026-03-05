@@ -99,6 +99,20 @@ export function useGridWorld() {
 		}
 	}, []);
 
+	const setTarget = useCallback((x, y) => {
+		if (envRef.current) {
+			envRef.current.setTarget(x, y);
+			const newState = envRef.current.reset();
+			setState(newState);
+			setReward(0);
+			setDone(false);
+			doneRef.current = false;
+			setSteps(0);
+			setHistory([]);
+			setLastAction(null);
+		}
+	}, []);
+
 	return {
 		state,
 		reward,
@@ -116,5 +130,6 @@ export function useGridWorld() {
 		toggleObstacle,
 		clearObstacles,
 		setObstaclesDirectly,
+		setTarget,
 	};
 }

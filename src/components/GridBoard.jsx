@@ -6,7 +6,9 @@ export default function GridBoard({
 	history,
 	obstacles = [],
 	editMode = false,
+	targetEditMode = false,
 	onToggleObstacle,
+	onSetTarget,
 }) {
 	const { position, target } = state;
 	const { height, width } = gridSize;
@@ -23,6 +25,13 @@ export default function GridBoard({
 	);
 
 	function handleCellClick(x, y) {
+		if (targetEditMode && onSetTarget) {
+			// Don't allow placing target on agent or obstacles
+			if (x === position[0] && y === position[1]) return;
+			if (obstacleSet.has(`${x}-${y}`)) return;
+			onSetTarget(x, y);
+			return;
+		}
 		if (!editMode || !onToggleObstacle) return;
 		// Don't allow placing obstacles on start or target
 		if (x === position[0] && y === position[1]) return;
@@ -34,6 +43,11 @@ export default function GridBoard({
 		<div className="grid-board">
 			{editMode && (
 				<div className="edit-mode-banner">Click cells to toggle obstacles</div>
+			)}
+			{targetEditMode && (
+				<div className="edit-mode-banner edit-mode-banner--target">
+					Click a cell to set the target
+				</div>
 			)}
 			<div
 				className="grid"
@@ -59,7 +73,7 @@ export default function GridBoard({
 							isTarget && "cell--target",
 							isObstacle && "cell--obstacle",
 							isVisited && "cell--visited",
-							editMode && "cell--editable",
+							(editMode || targetEditMode) && "cell--editable",
 						]
 							.filter(Boolean)
 							.join(" ");
