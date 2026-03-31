@@ -6,6 +6,7 @@ export default function ModelManager({
 	onLoadModel,
 	obstacles = [],
 	target = [8, 8],
+	checkpoints = [],
 }) {
 	const [models, setModels] = useState([]);
 	const [newModelName, setNewModelName] = useState("");
@@ -28,7 +29,7 @@ export default function ModelManager({
 		if (!newModelName.trim()) return;
 		setLoading(true);
 		try {
-			const environment = { obstacles, target_position: target };
+			const environment = { obstacles, target_position: target, checkpoints };
 			await saveModel(newModelName.trim(), environment);
 			setNewModelName("");
 			await loadModels();
@@ -88,6 +89,7 @@ export default function ModelManager({
 								<span className="model-meta">
 									ε {m.epsilon.toFixed(3)} ·{" "}
 									{m.environment?.obstacles?.length || 0} walls ·{" "}
+									{m.environment?.checkpoints?.length || 0} checkpoints ·{" "}
 									{m.environment?.target_position
 										? `target (${m.environment.target_position[0]}, ${m.environment.target_position[1]})`
 										: "default target"}{" "}

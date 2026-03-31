@@ -5,12 +5,15 @@ export class GridWorld {
 		startingPosition = [0, 0],
 		targetPosition = [8, 8],
 		obstacles = [],
+		checkpoints = [],
 	) {
 		this.height = height;
 		this.width = width;
 		this.startingPosition = [...startingPosition];
 		this.targetPosition = [...targetPosition];
 		this.obstacles = new Set(obstacles.map(([x, y]) => `${x}-${y}`));
+		this.checkpoints = checkpoints.map(([x, y]) => [x, y]);
+		this.currentCheckpointIndex = 0;
 
 		this.currentPosition = [...startingPosition];
 		this.maxSteps = height * width;
@@ -29,8 +32,22 @@ export class GridWorld {
 		this.targetPosition = [x, y];
 	}
 
+	setCheckpoints(checkpoints) {
+		this.checkpoints = checkpoints.map(([x, y]) => [x, y]);
+		this.currentCheckpointIndex = 0;
+	}
+
+	isGoalActive() {
+		return this.currentCheckpointIndex >= this.checkpoints.length;
+	}
+
+	getCheckpointIndex(x, y) {
+		return this.checkpoints.findIndex(([cx, cy]) => cx === x && cy === y);
+	}
+
 	reset() {
 		this.currentPosition = [...this.startingPosition];
+		this.currentCheckpointIndex = 0;
 		this.steps = 0;
 		return this.getState();
 	}
@@ -39,6 +56,9 @@ export class GridWorld {
 		return {
 			position: [...this.currentPosition],
 			target: [...this.targetPosition],
+			currentCheckpointIndex: this.currentCheckpointIndex,
+			checkpoints: this.checkpoints.map((c) => [...c]),
+			goalActive: this.isGoalActive(),
 		};
 	}
 
@@ -84,9 +104,21 @@ export class GridWorld {
 		this.currentPosition = [newX, newY];
 		this.steps++;
 
+		// Check if reached the next checkpoint in sequence
+		const checkpointIdx = this.getCheckpointIndex(newX, newY);
+		if (checkpointIdx === this.currentCheckpointIndex) {
+			reward = 0.5; // Intermediate reward for correct checkpoint
+			this.currentCheckpointIndex++;
+		}
+
+		// Check goal - only active if all checkpoints visited
 		if (newX === this.targetPosition[0] && newY === this.targetPosition[1]) {
-			reward = 1.0;
-			done = true;
+			if (this.isGoalActive()) {
+				reward = 1.0;
+				done = true;
+			} else {
+				reward = -0.1; // Penalty for reaching goal without all checkpoints
+			}
 		}
 
 		if (this.steps >= this.maxSteps) {

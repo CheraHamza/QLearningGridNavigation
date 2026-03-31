@@ -75,6 +75,7 @@ export async function trainBatch(
 	episodes = 500,
 	obstacles = [],
 	targetPosition = [8, 8],
+	checkpoints = [],
 ) {
 	// Training can be slow for many episodes — use a generous timeout (5 min)
 	const response = await fetchWithTimeout(
@@ -86,6 +87,7 @@ export async function trainBatch(
 				episodes,
 				obstacles,
 				target_position: targetPosition,
+				checkpoints,
 			}),
 		},
 		300000,

@@ -15,6 +15,7 @@ export function useGridWorld() {
 	const [steps, setSteps] = useState(0);
 	const [maxSteps, setMaxSteps] = useState(0);
 	const [obstacles, setObstacles] = useState([]);
+	const [checkpoints, setCheckpoints] = useState([]);
 
 	function initialize() {
 		if (envRef.current) return;
@@ -113,6 +114,39 @@ export function useGridWorld() {
 		}
 	}, []);
 
+	const toggleCheckpoint = useCallback((x, y) => {
+		setCheckpoints((prev) => {
+			const existingIdx = prev.findIndex(([cx, cy]) => cx === x && cy === y);
+			let next;
+			if (existingIdx !== -1) {
+				// Remove checkpoint
+				next = prev.filter((_, i) => i !== existingIdx);
+			} else {
+				// Add checkpoint at end (next in order)
+				next = [...prev, [x, y]];
+			}
+			// Sync with environment
+			if (envRef.current) {
+				envRef.current.setCheckpoints(next);
+			}
+			return next;
+		});
+	}, []);
+
+	const clearCheckpoints = useCallback(() => {
+		setCheckpoints([]);
+		if (envRef.current) {
+			envRef.current.setCheckpoints([]);
+		}
+	}, []);
+
+	const setCheckpointsDirectly = useCallback((newCheckpoints) => {
+		setCheckpoints(newCheckpoints);
+		if (envRef.current) {
+			envRef.current.setCheckpoints(newCheckpoints);
+		}
+	}, []);
+
 	return {
 		state,
 		reward,
@@ -124,6 +158,7 @@ export function useGridWorld() {
 		steps,
 		maxSteps,
 		obstacles,
+		checkpoints,
 		initialize,
 		step,
 		reset,
@@ -131,5 +166,8 @@ export function useGridWorld() {
 		clearObstacles,
 		setObstaclesDirectly,
 		setTarget,
+		toggleCheckpoint,
+		clearCheckpoints,
+		setCheckpointsDirectly,
 	};
 }

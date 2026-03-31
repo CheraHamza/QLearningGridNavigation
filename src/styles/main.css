@@ -259,6 +259,94 @@ body {
 	animation: pulse 2s ease-in-out infinite;
 }
 
+/* Agent Energy Indicator */
+.agent-energy-container {
+	position: relative;
+	width: 36px;
+	height: 36px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.agent-energy-ring {
+	position: absolute;
+	width: 36px;
+	height: 36px;
+	transform: rotate(-90deg);
+}
+
+.agent-energy-ring-bg {
+	fill: none;
+	stroke: rgba(52, 199, 89, 0.2);
+	stroke-width: 3;
+}
+
+.agent-energy-ring-fill {
+	fill: none;
+	stroke: var(--color-success);
+	stroke-width: 3;
+	stroke-linecap: round;
+	stroke-dasharray: 97.4;
+	stroke-dashoffset: 0;
+	transition:
+		stroke-dashoffset 0.3s ease,
+		stroke 0.3s ease;
+}
+
+.agent-energy-center {
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+	background: var(--color-success);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	animation: pulse 2s ease-in-out infinite;
+	z-index: 1;
+}
+
+.agent-energy-text {
+	font-size: 9px;
+	font-weight: 700;
+	font-family: var(--font-mono);
+	color: #fff;
+	line-height: 1;
+}
+
+/* Energy level color variants */
+.agent-energy--high .agent-energy-ring-fill {
+	stroke: var(--color-success);
+}
+
+.agent-energy--high .agent-energy-center {
+	background: var(--color-success);
+}
+
+.agent-energy--medium .agent-energy-ring-fill {
+	stroke: #ffb300;
+}
+
+.agent-energy--medium .agent-energy-center {
+	background: #ffb300;
+}
+
+.agent-energy--medium .agent-energy-ring-bg {
+	stroke: rgba(255, 179, 0, 0.2);
+}
+
+.agent-energy--low .agent-energy-ring-fill {
+	stroke: var(--color-danger);
+}
+
+.agent-energy--low .agent-energy-center {
+	background: var(--color-danger);
+}
+
+.agent-energy--low .agent-energy-ring-bg {
+	stroke: rgba(255, 59, 48, 0.2);
+}
+
 .target-dot {
 	width: 16px;
 	height: 16px;
@@ -287,6 +375,77 @@ body {
 	padding: var(--space-xs) 0;
 	margin-bottom: var(--space-sm);
 	border-bottom: 1px dashed var(--color-accent);
+}
+
+.edit-mode-banner--target {
+	color: var(--color-danger);
+	border-bottom-color: var(--color-danger);
+}
+
+.edit-mode-banner--checkpoint {
+	color: #9333ea;
+	border-bottom-color: #9333ea;
+}
+
+/* ======================== Checkpoint Cells ======================== */
+.cell--checkpoint {
+	background-color: rgba(147, 51, 234, 0.12);
+	border-color: #9333ea;
+}
+
+.cell--checkpoint-visited {
+	background-color: rgba(147, 51, 234, 0.05);
+	border-color: rgba(147, 51, 234, 0.3);
+}
+
+.cell--checkpoint-next {
+	background-color: rgba(147, 51, 234, 0.2);
+	border-color: #9333ea;
+	animation: pulse-checkpoint 1.5s ease-in-out infinite;
+}
+
+/* Inactive goal (checkpoints not complete) */
+.cell--target-inactive {
+	background-color: rgba(255, 59, 48, 0.05);
+	border-color: rgba(255, 59, 48, 0.3);
+}
+
+.cell--target-inactive .target-dot {
+	opacity: 0.3;
+}
+
+/* Checkpoint marker (number inside cell) */
+.checkpoint-marker {
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+	background-color: #9333ea;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.checkpoint-marker--visited {
+	background-color: rgba(147, 51, 234, 0.3);
+}
+
+.checkpoint-number {
+	font-size: 11px;
+	font-weight: 700;
+	color: #fff;
+	font-family: var(--font-mono);
+}
+
+@keyframes pulse-checkpoint {
+	0%,
+	100% {
+		transform: scale(1);
+		box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.4);
+	}
+	50% {
+		transform: scale(1.02);
+		box-shadow: 0 0 0 4px rgba(147, 51, 234, 0);
+	}
 }
 
 @keyframes pulse {
@@ -516,6 +675,56 @@ body {
 .badge-done {
 	background: var(--color-danger-soft);
 	color: var(--color-danger);
+}
+
+/* ======================== Energy Bar ======================== */
+.energy-bar-container {
+	margin-bottom: var(--space-md);
+	padding-bottom: var(--space-md);
+	border-bottom: 1px solid var(--color-border);
+}
+
+.energy-bar-header {
+	display: flex;
+	align-items: center;
+	gap: var(--space-sm);
+	margin-bottom: var(--space-xs);
+}
+
+.energy-bar-icon {
+	display: flex;
+	align-items: center;
+}
+
+.energy-bar-label {
+	font-size: 0.625rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: var(--color-text-secondary);
+}
+
+.energy-bar-value {
+	margin-left: auto;
+	font-size: 0.75rem;
+	font-weight: 600;
+	font-family: var(--font-mono);
+	color: var(--color-text-primary);
+}
+
+.energy-bar-track {
+	height: 8px;
+	background: var(--color-bg-tertiary);
+	border-radius: 100px;
+	overflow: hidden;
+}
+
+.energy-bar-fill {
+	height: 100%;
+	border-radius: 100px;
+	transition:
+		width 0.3s ease,
+		background-color 0.3s ease;
 }
 
 /* ======================== History Panel ======================== */

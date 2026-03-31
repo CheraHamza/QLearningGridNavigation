@@ -15,6 +15,7 @@ import {
 	PenTool,
 	Trash2,
 	Crosshair,
+	Flag,
 } from "lucide-react";
 
 export default function App() {
@@ -29,6 +30,7 @@ export default function App() {
 		steps,
 		maxSteps,
 		obstacles,
+		checkpoints,
 		initialize,
 		step,
 		reset,
@@ -36,6 +38,9 @@ export default function App() {
 		clearObstacles,
 		setObstaclesDirectly,
 		setTarget,
+		toggleCheckpoint,
+		clearCheckpoints,
+		setCheckpointsDirectly,
 	} = useGridWorld();
 
 	const [isAutoRunning, setIsAutoRunning] = useState(false);
@@ -44,6 +49,7 @@ export default function App() {
 	const [trainResult, setTrainResult] = useState(null);
 	const [editMode, setEditMode] = useState(false);
 	const [targetEditMode, setTargetEditMode] = useState(false);
+	const [checkpointEditMode, setCheckpointEditMode] = useState(false);
 
 	// Backend connection status: "connected" | "connecting" | "disconnected"
 	const [backendStatus, setBackendStatus] = useState("connecting");
@@ -52,6 +58,7 @@ export default function App() {
 	const resetRef = useRef(reset);
 	const skipResetOnObstacleChangeRef = useRef(false);
 	const skipResetOnTargetChangeRef = useRef(false);
+	const skipResetOnCheckpointChangeRef = useRef(false);
 	stepRef.current = step;
 	resetRef.current = reset;
 
@@ -144,6 +151,8 @@ export default function App() {
 			position: state.position,
 			target: state.target,
 			obstacles,
+			checkpoints,
+			current_checkpoint_index: state.currentCheckpointIndex || 0,
 			reward,
 			done,
 		};
@@ -186,10 +195,16 @@ export default function App() {
 		setTrainResult(null);
 		skipResetOnObstacleChangeRef.current = true;
 		skipResetOnTargetChangeRef.current = true;
+		skipResetOnCheckpointChangeRef.current = true;
 		if (envConfig?.obstacles) {
 			setObstaclesDirectly(envConfig.obstacles);
 		} else {
 			setObstaclesDirectly([]);
+		}
+		if (envConfig?.checkpoints) {
+			setCheckpointsDirectly(envConfig.checkpoints);
+		} else {
+			setCheckpointsDirectly([]);
 		}
 		if (envConfig?.target_position) {
 			setTarget(envConfig.target_position[0], envConfig.target_position[1]);
@@ -201,7 +216,12 @@ export default function App() {
 		setIsTraining(true);
 		setIsAutoRunning(false);
 		try {
-			const data = await trainBatch(episodes, obstacles, state.target);
+			const data = await trainBatch(
+				episodes,
+				obstacles,
+				state.target,
+				checkpoints,
+			);
 			setCurrentEpsilon(data.epsilon);
 
 			// Compute summary stats
@@ -274,6 +294,28 @@ export default function App() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [state?.target]);
 
+	// Reset agent when checkpoints change (environment changed = old Q-table invalid)
+	const prevCheckpointsRef = useRef(checkpoints);
+	useEffect(() => {
+		const prev = prevCheckpointsRef.current;
+		prevCheckpointsRef.current = checkpoints;
+
+		// Skip on initial render
+		if (prev === checkpoints) return;
+
+		// Skip reset if the checkpoint change came from loading a model
+		if (skipResetOnCheckpointChangeRef.current) {
+			skipResetOnCheckpointChangeRef.current = false;
+			return;
+		}
+
+		// Environment changed — reset the backend agent & training results
+		setTrainResult(null);
+		resetAgent()
+			.then((data) => setCurrentEpsilon(data.epsilon))
+			.catch(() => {});
+	}, [checkpoints]);
+
 	if (!state) return null;
 
 	return (
@@ -296,13 +338,18 @@ export default function App() {
 						gridSize={gridSize}
 						history={history}
 						obstacles={obstacles}
+						checkpoints={checkpoints}
 						editMode={editMode}
 						targetEditMode={targetEditMode}
+						checkpointEditMode={checkpointEditMode}
 						onToggleObstacle={toggleObstacle}
 						onSetTarget={(x, y) => {
 							setTarget(x, y);
 							setTargetEditMode(false);
 						}}
+						onToggleCheckpoint={toggleCheckpoint}
+						steps={steps}
+						maxSteps={maxSteps}
 					/>
 					<Controls onStep={step} done={done} />
 				</div>
@@ -316,6 +363,8 @@ export default function App() {
 						epsilon={currentEpsilon}
 						done={done}
 						lastAction={lastAction}
+						checkpoints={checkpoints}
+						currentCheckpointIndex={state.currentCheckpointIndex || 0}
 					/>
 
 					<div className="card">
@@ -354,13 +403,14 @@ export default function App() {
 					</div>
 
 					<div className="card">
-						<h3 className="card-title">Obstacles & Target</h3>
+						<h3 className="card-title">Environment Setup</h3>
 						<div className="agent-controls">
 							<button
 								className={`btn ${editMode ? "btn-danger" : "btn-secondary"}`}
 								onClick={() => {
 									setEditMode(!editMode);
 									setTargetEditMode(false);
+									setCheckpointEditMode(false);
 								}}
 							>
 								<PenTool size={16} />
@@ -371,21 +421,50 @@ export default function App() {
 								onClick={() => {
 									setTargetEditMode(!targetEditMode);
 									setEditMode(false);
+									setCheckpointEditMode(false);
 								}}
 							>
 								<Crosshair size={16} />
 								{targetEditMode ? "Cancel" : "Move Target"}
 							</button>
+							<button
+								className={`btn ${checkpointEditMode ? "btn-danger" : "btn-secondary"}`}
+								onClick={() => {
+									setCheckpointEditMode(!checkpointEditMode);
+									setEditMode(false);
+									setTargetEditMode(false);
+								}}
+							>
+								<Flag size={16} />
+								{checkpointEditMode ? "Done" : "Edit Checkpoints"}
+							</button>
 							{obstacles.length > 0 && (
 								<button className="btn btn-secondary" onClick={clearObstacles}>
 									<Trash2 size={16} />
-									Clear All ({obstacles.length})
+									Clear Obstacles ({obstacles.length})
+								</button>
+							)}
+							{checkpoints.length > 0 && (
+								<button
+									className="btn btn-secondary"
+									onClick={clearCheckpoints}
+								>
+									<Trash2 size={16} />
+									Clear Checkpoints ({checkpoints.length})
 								</button>
 							)}
 						</div>
 						{state.target && (
 							<p className="turbo-hint">
 								Target: ({state.target[0]}, {state.target[1]})
+							</p>
+						)}
+						{checkpoints.length > 0 && (
+							<p className="turbo-hint">
+								Checkpoints:{" "}
+								{checkpoints
+									.map((c, i) => `${i + 1}:(${c[0]},${c[1]})`)
+									.join(" → ")}
 							</p>
 						)}
 					</div>
@@ -448,6 +527,7 @@ export default function App() {
 						onLoadModel={handleModelLoaded}
 						obstacles={obstacles}
 						target={state.target}
+						checkpoints={checkpoints}
 					/>
 					<HistoryPanel history={history} />
 				</aside>
