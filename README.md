@@ -2,6 +2,10 @@
 
 A **Q-learning** agent playground for 10×10 grid navigation built with React 19 and Vite.
 
+#### Backend Available here ⬇️
+
+[https://github.com/CheraHamza/QLearningGridNavigation-Backend](https://github.com/CheraHamza/QLearningGridNavigation-Backend)
+
 ## Overview
 
 The agent uses a Q-learning model to navigate a grid world — moving from a start position to a target while avoiding obstacles and visiting checkpoints. The environment provides real-time feedback and interactive editing capabilities.
