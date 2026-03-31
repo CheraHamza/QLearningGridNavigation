@@ -322,7 +322,9 @@ export default function App() {
 		<div className="app">
 			<header className="app-header">
 				<h1>RL Grid Navigation</h1>
-				<p className="app-subtitle">Reinforcement Learning Agent Playground</p>
+				<p className="app-subtitle">
+					Reinforcement Q-Learning Agent Playground
+				</p>
 				<div className={`backend-status backend-status--${backendStatus}`}>
 					<span className="backend-status-dot" />
 					{backendStatus === "connected" && "Backend connected"}
